@@ -617,10 +617,7 @@ impl HelpTemplate<'_, '_> {
         debug!("HelpTemplate::help");
         use std::fmt::Write as _;
         let pv_ctx = &self.styles.get_context_possible_values();
-        // Delete for 5.0 the following
-        let literal = &self.styles.get_literal();
-        // Uncomment for 5.0 the following
-        // let pv_ctx_val = &self.styles.get_context_possible_values_data();
+        let pv_ctx_val = &self.styles.get_context_possible_values_data();
 
         // Is help on next line, if so then indent
         if next_line_help {
@@ -688,10 +685,7 @@ impl HelpTemplate<'_, '_> {
                         let name = pv.get_name();
 
                         let mut descr = StyledStr::new();
-                        // Delete for 5.0 the following
-                        let _ = write!(&mut descr, "{literal}{name}{literal:#}",);
-                        // Uncomment for 5.0 the following
-                        // let _ = write!(&mut descr, "{pv_ctx_val}{name}{pv_ctx_val:#}",);
+                        let _ = write!(&mut descr, "{pv_ctx_val}{name}{pv_ctx_val:#}",);
                         if let Some(help) = pv.get_help() {
                             debug!("HelpTemplate::help: Possible Value help");
                             // To align help messages
