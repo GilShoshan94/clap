@@ -28,6 +28,8 @@ pub struct Styles {
     placeholder: Style,
     valid: Style,
     invalid: Style,
+    context: Style,
+    context_data: Option<Style>,
 }
 
 impl Styles {
@@ -41,6 +43,8 @@ impl Styles {
             placeholder: Style::new(),
             valid: Style::new(),
             invalid: Style::new(),
+            context: Style::new(),
+            context_data: None,
         }
     }
 
@@ -58,6 +62,8 @@ impl Styles {
                 placeholder: Style::new(),
                 valid: Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green))),
                 invalid: Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow))),
+                context: Style::new(),
+                context_data: None,
             }
         }
         #[cfg(not(feature = "color"))]
@@ -114,6 +120,24 @@ impl Styles {
         self.invalid = style;
         self
     }
+
+    /// Highlight all specified contexts: `[aliases], [default], [env], and [possible values]`.
+    ///
+    /// * Also default style for `context_data` if not explicitly set.
+    #[inline]
+    pub const fn context(mut self, style: Style) -> Self {
+        self.context = style;
+        self
+    }
+
+    /// Highlight data/values within the specified contexts: `[aliases], [default], [env], and [possible values]`
+    ///
+    /// * If not not explicitly set, fallbacks to `context`'s style.
+    #[inline]
+    pub const fn context_data(mut self, style: Style) -> Self {
+        self.context_data = Some(style);
+        self
+    }
 }
 
 /// Reflection
@@ -158,6 +182,23 @@ impl Styles {
     #[inline(always)]
     pub const fn get_invalid(&self) -> &Style {
         &self.invalid
+    }
+
+    /// Highlight specified contexts: `[aliases], [default], [env], and [possible values]`
+    #[inline(always)]
+    pub const fn get_context(&self) -> &Style {
+        &self.context
+    }
+
+    /// Highlight data/values within the specified contexts: `[aliases], [default], [env], and [possible values]`
+    ///
+    /// * If `context_data` was not set, defaults to `context`'s style.
+    #[inline(always)]
+    pub const fn get_context_data(&self) -> &Style {
+        match &self.context_data {
+            Some(s) => s,
+            None => &self.context,
+        }
     }
 }
 
