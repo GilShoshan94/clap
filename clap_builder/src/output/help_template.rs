@@ -617,6 +617,7 @@ impl HelpTemplate<'_, '_> {
         debug!("HelpTemplate::help");
         use std::fmt::Write as _;
         let literal = &self.styles.get_literal();
+        let pv_ctx = &self.styles.get_context_possible_values();
 
         // Is help on next line, if so then indent
         if next_line_help {
@@ -678,7 +679,8 @@ impl HelpTemplate<'_, '_> {
                     if !help_is_empty {
                         let _ = write!(self.writer, "\n\n{:spaces$}", "");
                     }
-                    self.writer.push_str("Possible values:");
+                    self.writer
+                        .push_string(format!("{pv_ctx}Possible values:{pv_ctx:#}"));
                     for pv in possible_vals.iter().filter(|pv| !pv.is_hide_set()) {
                         let name = pv.get_name();
 
@@ -739,6 +741,15 @@ impl HelpTemplate<'_, '_> {
 
     fn spec_vals(&self, a: &Arg) -> String {
         debug!("HelpTemplate::spec_vals: a={a}");
+        let a_ctx = &self.styles.get_context_aliases();
+        let a_ctx_val = &self.styles.get_context_aliases_data();
+        let d_ctx = &self.styles.get_context_default();
+        let d_ctx_val = &self.styles.get_context_default_data();
+        let e_ctx = &self.styles.get_context_env();
+        let e_ctx_val = &self.styles.get_context_env_data();
+        let pv_ctx = &self.styles.get_context_possible_values();
+        let pv_ctx_val = &self.styles.get_context_possible_values_data();
+
         let mut spec_vals = Vec::new();
         #[cfg(feature = "env")]
         if let Some(ref env) = a.env {
@@ -758,7 +769,11 @@ impl HelpTemplate<'_, '_> {
                 } else {
                     Default::default()
                 };
-                let env_info = format!("[env: {}{}]", env.0.to_string_lossy(), env_val);
+                let env_info = format!(
+                    "{e_ctx}[env: {e_ctx:#}{e_ctx_val}{}{}{e_ctx_val:#}{e_ctx}]{e_ctx:#}",
+                    env.0.to_string_lossy(),
+                    env_val
+                );
                 spec_vals.push(env_info);
             }
         }
@@ -782,7 +797,9 @@ impl HelpTemplate<'_, '_> {
                 .collect::<Vec<_>>()
                 .join(" ");
 
-            spec_vals.push(format!("[default: {pvs}]"));
+            spec_vals.push(format!(
+                "{d_ctx}[default: {d_ctx:#}{d_ctx_val}{pvs}{d_ctx_val:#}{d_ctx}]{d_ctx:#}"
+            ));
         }
 
         let mut als = Vec::new();
@@ -791,7 +808,7 @@ impl HelpTemplate<'_, '_> {
             .short_aliases
             .iter()
             .filter(|&als| als.1) // visible
-            .map(|als| format!("-{}", als.0)); // name
+            .map(|als| format!("{a_ctx_val}-{}{a_ctx_val:#}", als.0)); // name
         debug!(
             "HelpTemplate::spec_vals: Found short aliases...{:?}",
             a.short_aliases
@@ -802,12 +819,15 @@ impl HelpTemplate<'_, '_> {
             .aliases
             .iter()
             .filter(|&als| als.1) // visible
-            .map(|als| format!("--{}", als.0)); // name
+            .map(|als| format!("{a_ctx_val}--{}{a_ctx_val:#}", als.0)); // name
         debug!("HelpTemplate::spec_vals: Found aliases...{:?}", a.aliases);
         als.extend(long_als);
 
         if !als.is_empty() {
-            spec_vals.push(format!("[aliases: {}]", als.join(", ")));
+            spec_vals.push(format!(
+                "{a_ctx}[aliases: {a_ctx:#}{}{a_ctx}]{a_ctx:#}",
+                als.join(format!("{a_ctx}, {a_ctx:#}").as_str())
+            ));
         }
 
         if !a.is_hide_possible_values_set() && !self.use_long_pv(a) {
@@ -818,10 +838,13 @@ impl HelpTemplate<'_, '_> {
                 let pvs = possible_vals
                     .iter()
                     .filter_map(PossibleValue::get_visible_quoted_name)
+                    .map(|pvs| format!("{pv_ctx_val}{pvs}{pv_ctx_val:#}"))
                     .collect::<Vec<_>>()
-                    .join(", ");
+                    .join(format!("{pv_ctx}, {pv_ctx:#}").as_str());
 
-                spec_vals.push(format!("[possible values: {pvs}]"));
+                spec_vals.push(format!(
+                    "{pv_ctx}[possible values: {pv_ctx:#}{pvs}{pv_ctx}]{pv_ctx:#}"
+                ));
             }
         }
         let connector = if self.use_long { "\n" } else { " " };
@@ -984,15 +1007,19 @@ impl HelpTemplate<'_, '_> {
 
     fn sc_spec_vals(&self, a: &Command) -> String {
         debug!("HelpTemplate::sc_spec_vals: a={}", a.get_name());
+        let a_ctx = &self.styles.get_context_aliases();
+        let a_ctx_val = &self.styles.get_context_aliases_data();
         let mut spec_vals = vec![];
 
         let mut short_als = a
             .get_visible_short_flag_aliases()
-            .map(|a| format!("-{a}"))
+            .map(|a| format!("{a_ctx_val}-{a}{a_ctx_val:#}"))
             .collect::<Vec<_>>();
-        let als = a.get_visible_aliases().map(|s| s.to_string());
+        let als = a
+            .get_visible_aliases()
+            .map(|s| format!("{a_ctx_val}{s}{a_ctx_val:#}"));
         short_als.extend(als);
-        let all_als = short_als.join(", ");
+        let all_als = short_als.join(format!("{a_ctx}, {a_ctx:#}").as_str());
         if !all_als.is_empty() {
             debug!(
                 "HelpTemplate::spec_vals: Found aliases...{:?}",
@@ -1002,7 +1029,9 @@ impl HelpTemplate<'_, '_> {
                 "HelpTemplate::spec_vals: Found short flag aliases...{:?}",
                 a.get_all_short_flag_aliases().collect::<Vec<_>>()
             );
-            spec_vals.push(format!("[aliases: {all_als}]"));
+            spec_vals.push(format!(
+                "{a_ctx}[aliases: {a_ctx:#}{all_als}{a_ctx}]{a_ctx:#}"
+            ));
         }
 
         spec_vals.join(" ")

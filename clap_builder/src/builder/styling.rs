@@ -28,6 +28,16 @@ pub struct Styles {
     placeholder: Style,
     valid: Style,
     invalid: Style,
+    context: Style,
+    context_data: Option<Style>,
+    context_aliases: Option<Style>,
+    context_aliases_data: Option<Style>,
+    context_default: Option<Style>,
+    context_default_data: Option<Style>,
+    context_env: Option<Style>,
+    context_env_data: Option<Style>,
+    context_possible_values: Option<Style>,
+    context_possible_values_data: Option<Style>,
 }
 
 impl Styles {
@@ -41,6 +51,16 @@ impl Styles {
             placeholder: Style::new(),
             valid: Style::new(),
             invalid: Style::new(),
+            context: Style::new(),
+            context_data: None,
+            context_aliases: None,
+            context_aliases_data: None,
+            context_default: None,
+            context_default_data: None,
+            context_env: None,
+            context_env_data: None,
+            context_possible_values: None,
+            context_possible_values_data: None,
         }
     }
 
@@ -58,6 +78,16 @@ impl Styles {
                 placeholder: Style::new(),
                 valid: Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green))),
                 invalid: Style::new().fg_color(Some(Color::Ansi(AnsiColor::Yellow))),
+                context: Style::new(),
+                context_data: None,
+                context_aliases: None,
+                context_aliases_data: None,
+                context_default: None,
+                context_default_data: None,
+                context_env: None,
+                context_env_data: None,
+                context_possible_values: None,
+                context_possible_values_data: None,
             }
         }
         #[cfg(not(feature = "color"))]
@@ -114,6 +144,102 @@ impl Styles {
         self.invalid = style;
         self
     }
+
+    /// Highlight all specified contexts: `[aliases], [default], [env], and [possible values]`.
+    ///
+    /// * Specific contexts style can be overwrite individually.
+    /// * Also default style for `context_data` if not explicitly set.
+    #[inline]
+    pub const fn context(mut self, style: Style) -> Self {
+        self.context = style;
+        self
+    }
+
+    /// Highlight data/values within the specified contexts: `[aliases], [default], [env], and [possible values]`
+    ///
+    /// * Applied only on the contexts that were not individually set.
+    /// * If not not explicitly set, fallbacks to `context`'s style.
+    #[inline]
+    pub const fn context_data(mut self, style: Style) -> Self {
+        self.context_data = Some(style);
+        self
+    }
+
+    /// Highlight `[aliases]` context (overwrite default `context`).
+    ///
+    /// * If not not explicitly set, fallbacks to `context`'s style.
+    /// * Also default style for `context_aliases_data` if not explicitly set.
+    #[inline]
+    pub const fn context_aliases(mut self, style: Style) -> Self {
+        self.context_aliases = Some(style);
+        self
+    }
+
+    /// Highlight data/values within the `[aliases]` context.
+    ///
+    /// If not not explicitly set, fallbacks to `context_aliases`'s style.
+    #[inline]
+    pub const fn context_aliases_data(mut self, style: Style) -> Self {
+        self.context_aliases_data = Some(style);
+        self
+    }
+
+    /// Highlight `[default]` context (overwrite default `context`).
+    ///
+    /// * If not not explicitly set, fallbacks to `context`'s style.
+    /// * Also default style for `context_default_data` if not explicitly set.
+    #[inline]
+    pub const fn context_default(mut self, style: Style) -> Self {
+        self.context_default = Some(style);
+        self
+    }
+
+    /// Highlight data/values within the `[default]` context.
+    ///
+    /// If not not explicitly set, fallbacks to `context_default`'s style.
+    #[inline]
+    pub const fn context_default_data(mut self, style: Style) -> Self {
+        self.context_default_data = Some(style);
+        self
+    }
+
+    /// Highlight `[env]` context (overwrite default `context`).
+    ///
+    /// * If not not explicitly set, fallbacks to `context`'s style.
+    /// * Also default style for `context_env_data` if not explicitly set.
+    #[inline]
+    pub const fn context_env(mut self, style: Style) -> Self {
+        self.context_env = Some(style);
+        self
+    }
+
+    /// Highlight data/values within the `[env]` context.
+    ///
+    /// If not not explicitly set, fallbacks to `context_env`'s style.
+    #[inline]
+    pub const fn context_env_data(mut self, style: Style) -> Self {
+        self.context_env_data = Some(style);
+        self
+    }
+
+    /// Highlight `[possible values]` context (overwrite default `context`).
+    ///
+    /// * If not not explicitly set, fallbacks to `context`'s style.
+    /// * Also default style for `context_possible_values_data` if not explicitly set.
+    #[inline]
+    pub const fn context_possible_values(mut self, style: Style) -> Self {
+        self.context_possible_values = Some(style);
+        self
+    }
+
+    /// Highlight data/values within the `[possible values]` context.
+    ///
+    /// If not not explicitly set, fallbacks to `context_possible_values`'s style.
+    #[inline]
+    pub const fn context_possible_values_data(mut self, style: Style) -> Self {
+        self.context_possible_values_data = Some(style);
+        self
+    }
 }
 
 /// Reflection
@@ -158,6 +284,125 @@ impl Styles {
     #[inline(always)]
     pub const fn get_invalid(&self) -> &Style {
         &self.invalid
+    }
+
+    /// Highlight specified contexts: `[aliases], [default], [env], and [possible values]`
+    /// (Unless overwritten individually per context)
+    #[inline(always)]
+    pub const fn get_context(&self) -> &Style {
+        &self.context
+    }
+
+    /// Highlight data/values within the specified contexts: `[aliases], [default], [env], and [possible values]`
+    ///
+    /// * Applied only on the contexts that were not individually set.
+    /// * If `context_data` was not set, defaults to `context`'s style.
+    #[inline(always)]
+    pub const fn get_context_data(&self) -> &Style {
+        match &self.context_data {
+            Some(s) => s,
+            None => &self.context,
+        }
+    }
+
+    /// Highlight `[aliases]` context (overwrite default `context`).
+    #[inline(always)]
+    pub const fn get_context_aliases(&self) -> &Style {
+        match &self.context_aliases {
+            Some(s) => s,
+            None => &self.context,
+        }
+    }
+
+    /// Highlight data/values within the `[aliases]` context.
+    ///
+    /// If `context_aliases_data` was not set:
+    /// - defaults to `context_aliases`'s style if it was explicitly set.
+    /// - otherwise defaults to `context_data`'s style.
+    #[inline(always)]
+    pub const fn get_context_aliases_data(&self) -> &Style {
+        match &self.context_aliases_data {
+            Some(s) => s,
+            None => match &self.context_aliases {
+                Some(b) => b,
+                None => self.get_context_data(),
+            },
+        }
+    }
+
+    /// Highlight `[default]` context (overwrite default `context`).
+    #[inline(always)]
+    pub const fn get_context_default(&self) -> &Style {
+        match &self.context_default {
+            Some(s) => s,
+            None => &self.context,
+        }
+    }
+
+    /// Highlight data/values within the `[default]` context.
+    ///
+    /// If `context_default_data` was not set:
+    /// - defaults to `context_default`'s style if it was explicitly set.
+    /// - otherwise defaults to `context_data`'s style.
+    #[inline(always)]
+    pub const fn get_context_default_data(&self) -> &Style {
+        match &self.context_default_data {
+            Some(s) => s,
+            None => match &self.context_default {
+                Some(b) => b,
+                None => self.get_context_data(),
+            },
+        }
+    }
+
+    /// Highlight `[env]` context (overwrite default `context`).
+    #[inline(always)]
+    pub const fn get_context_env(&self) -> &Style {
+        match &self.context_env {
+            Some(s) => s,
+            None => &self.context,
+        }
+    }
+
+    /// Highlight data/values within the `[env]` context.
+    ///
+    /// If `context_env_data` was not set:
+    /// - defaults to `context_env`'s style if it was explicitly set.
+    /// - otherwise defaults to `context_data`'s style.
+    #[inline(always)]
+    pub const fn get_context_env_data(&self) -> &Style {
+        match &self.context_env_data {
+            Some(s) => s,
+            None => match &self.context_env {
+                Some(b) => b,
+                None => self.get_context_data(),
+            },
+        }
+    }
+
+    /// Highlight `[possible values]` context (overwrite default `context`).
+    #[inline(always)]
+    pub const fn get_context_possible_values(&self) -> &Style {
+        match &self.context_possible_values {
+            Some(s) => s,
+            None => &self.context,
+        }
+    }
+
+    /// Highlight data/values within the `[possible values]` context.
+    ///
+    /// If `context_possible_values_data` was not set:
+    /// - defaults to `context_possible_values`'s style if it was explicitly set.
+    /// - otherwise defaults to `context_data`'s style.
+    #[inline(always)]
+    pub const fn get_context_possible_values_data(&self) -> &Style {
+        match &self.context_possible_values_data {
+            Some(s) => s,
+            None => match &self.context_possible_values {
+                Some(b) => b,
+                None => self.get_context_data(),
+            },
+        }
     }
 }
 
